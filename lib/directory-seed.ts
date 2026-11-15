@@ -1,0 +1,252 @@
+import type { Db, OptionalId } from "mongodb";
+import type { ResourceDocument } from "@/lib/types";
+
+export const directorySeedBatch = "navkar-directory-2026-11";
+
+// Review date recorded after checking each official source link.
+const reviewedAt = new Date("2026-11-15T00:00:00.000Z");
+
+type SeededResourceDocument = ResourceDocument & {
+  seedBatch?: string;
+  createdAt?: Date;
+};
+
+export const directoryResources: Array<OptionalId<ResourceDocument> & { slug: string }> = [
+  {
+    slug: "tata-memorial-hospital-mumbai",
+    name: "Tata Memorial Hospital",
+    category: "hospitals",
+    organisationType: "Cancer hospital",
+    locality: "Parel",
+    city: "Mumbai",
+    state: "Maharashtra",
+    pinCode: "400012",
+    coverageType: "local",
+    description: "Cancer hospital. The patient guide includes registration and hospital contact information.",
+    actionLabel: "View patient guide",
+    officialUrl: "https://tmc.gov.in/assets/PDF/TMH_Patient_Booklet_2026_Low%20Res.pdf",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "actrec-tata-memorial-centre",
+    name: "ACTREC, Tata Memorial Centre",
+    category: "hospitals",
+    organisationType: "Cancer treatment centre",
+    locality: "Kharghar",
+    city: "Navi Mumbai",
+    state: "Maharashtra",
+    pinCode: "410210",
+    coverageType: "local",
+    description: "Cancer treatment centre with online registration for new patients who have a cancer diagnosis.",
+    actionLabel: "Open patient registration",
+    officialUrl: "https://apps.actrec.gov.in/abha",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "gujarat-cancer-research-institute",
+    name: "Gujarat Cancer & Research Institute (GCRI)",
+    category: "hospitals",
+    organisationType: "Regional cancer institute",
+    city: "Ahmedabad",
+    state: "Gujarat",
+    coverageType: "local",
+    description: "Cancer institute with medical, surgical, and paediatric oncology departments.",
+    actionLabel: "Visit hospital website",
+    officialUrl: "https://gcriindia.org/",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "dr-pankaj-chaturvedi",
+    name: "Dr. Pankaj Chaturvedi",
+    category: "doctors",
+    organisationType: "Doctor",
+    city: "Mumbai",
+    state: "Maharashtra",
+    coverageType: "local",
+    specialty: "Head and neck cancer surgery",
+    affiliation: "Tata Memorial Centre",
+    description: "Head and neck cancer surgeon affiliated with Tata Memorial Centre.",
+    actionLabel: "View institutional profile",
+    officialUrl: "https://tmcepi.gov.in/AccesstoAffordableCancerCare/Message.aspx",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "dr-apurva-a-patel",
+    name: "Dr. Apurva A. Patel",
+    category: "doctors",
+    organisationType: "Doctor",
+    city: "Ahmedabad",
+    state: "Gujarat",
+    coverageType: "local",
+    specialty: "Medical oncology",
+    affiliation: "Gujarat Cancer & Research Institute",
+    description: "Medical oncology specialist at Gujarat Cancer & Research Institute.",
+    actionLabel: "View doctor profile",
+    officialUrl: "https://www.gcriindia.org/Resume/Dr%20Apurva%20Patel.html",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "dr-sonia-parikh",
+    name: "Dr. Sonia Parikh",
+    category: "doctors",
+    organisationType: "Doctor",
+    city: "Ahmedabad",
+    state: "Gujarat",
+    coverageType: "local",
+    specialty: "Medical oncology",
+    affiliation: "Gujarat Cancer & Research Institute",
+    description: "Medical oncology specialist at Gujarat Cancer & Research Institute.",
+    actionLabel: "View oncology department",
+    officialUrl: "https://gcriindia.org/medical_oncology.html",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "roche-blue-tree-program",
+    name: "Roche Blue Tree Program",
+    category: "medicine-assistance",
+    organisationType: "Patient support programme",
+    coverage: "India, subject to programme eligibility",
+    coverageType: "national",
+    description: "Patient support programme that includes cancer care. Contact Roche about enrolment and assistance for a prescribed medicine.",
+    actionLabel: "View programme",
+    officialUrl: "https://www.rocheindia.com/about/blue-tree-program",
+    eligibilitySummary: "Support is subject to programme eligibility and the prescribed medicine. Confirm enrolment directly with Roche.",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "pradhan-mantri-bhartiya-janaushadhi-pariyojana",
+    name: "Pradhan Mantri Bhartiya Janaushadhi Pariyojana (PMBJP)",
+    category: "medicine-assistance",
+    organisationType: "Government medicine outlet programme",
+    coverage: "India",
+    coverageType: "national",
+    description: "Find affordable generic medicine outlets by state, district, or PIN. Contact the outlet to confirm stock for your prescription.",
+    actionLabel: "Find a Jan Aushadhi outlet",
+    officialUrl: "https://janaushadhi.gov.in/locate-kendra",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "indian-cancer-society-cancer-cure-fund",
+    name: "Indian Cancer Society – Cancer Cure Fund",
+    category: "financial-aid",
+    organisationType: "NGO financial assistance programme",
+    coverage: "Through participating hospitals",
+    coverageType: "participating-network",
+    description: "NGO financial assistance for eligible cancer patients. See the programme page for eligibility and application information.",
+    actionLabel: "View eligibility and application information",
+    officialUrl: "https://www.indiancancersociety.org/what-do-we-do/cancer-cure",
+    eligibilitySummary: "Eligibility conditions apply, including treatment through an Indian Cancer Society empanelled hospital. Review the current official criteria before applying.",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "health-ministers-cancer-patient-fund",
+    name: "Health Minister’s Cancer Patient Fund (HMCPF)",
+    category: "financial-aid",
+    organisationType: "Government financial assistance programme",
+    coverage: "India, through eligible cancer centres and institutes",
+    coverageType: "participating-network",
+    description: "Financial assistance under Rashtriya Arogya Nidhi for eligible low-income cancer patients.",
+    actionLabel: "View government financial support",
+    officialUrl: "https://main.mohfw.gov.in/Major-Programmes/poor-patients-financial-support",
+    referenceUrl: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=1941461&lang=2&reg=48",
+    eligibilitySummary: "For eligible low-income cancer patients receiving treatment through qualifying cancer centres and institutes. Consult the current government guidance.",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "ayushman-bharat-pm-jay",
+    name: "Ayushman Bharat PM-JAY",
+    category: "financial-aid",
+    organisationType: "Government health assurance scheme",
+    coverage: "Participating locations and empanelled hospitals",
+    coverageType: "national",
+    description: "Government health cover for eligible beneficiaries. Call the official helpline at 14555 for help checking eligibility.",
+    actionLabel: "Check eligibility",
+    officialUrl: "https://pmjay.gov.in/",
+    eligibilitySummary: "Eligibility conditions apply. Use the official portal, an empanelled hospital, or helpline 14555 to check beneficiary status.",
+    contactDetails: { phone: "14555" },
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+  {
+    slug: "mahatma-jyotirao-phule-jan-arogya-yojana",
+    name: "Mahatma Jyotirao Phule Jan Arogya Yojana (MJPJAY)",
+    category: "financial-aid",
+    organisationType: "Maharashtra health scheme",
+    state: "Maharashtra",
+    coverage: "Maharashtra",
+    coverageType: "regional",
+    description: "Maharashtra health scheme. Use the official portal to check eligibility and find network hospitals.",
+    actionLabel: "Check eligibility and network hospitals",
+    officialUrl: "https://www.jeevandayee.gov.in/",
+    eligibilitySummary: "Eligibility and network-hospital conditions apply. Check the current Maharashtra scheme portal.",
+    contactDetails: {},
+    publicationStatus: "published",
+    lastReviewedAt: reviewedAt,
+    isDemo: false,
+  },
+];
+
+export async function seedDirectoryResources(database: Db) {
+  const collection = database.collection<SeededResourceDocument>("resources");
+  const result = await collection.bulkWrite(
+    directoryResources.map((resource) => ({
+      updateOne: {
+        filter: { slug: resource.slug },
+        update: {
+          // $setOnInsert keeps existing records, local edits, and publication
+          // settings untouched, so re-running the seed never duplicates or
+          // overwrites a listing.
+          $setOnInsert: {
+            ...resource,
+            seedBatch: directorySeedBatch,
+            createdAt: new Date(),
+          },
+        },
+        upsert: true,
+      },
+    })),
+    { ordered: true },
+  );
+
+  await collection.createIndex(
+    { slug: 1 },
+    { unique: true, partialFilterExpression: { slug: { $type: "string" } } },
+  );
+  await collection.createIndex({ publicationStatus: 1, city: 1, category: 1 });
+  await collection.createIndex({ publicationStatus: 1, pinCode: 1, category: 1 });
+  await collection.createIndex({ publicationStatus: 1, coverageType: 1, category: 1 });
+  await database.collection("partnerApplications").createIndex({ reviewStatus: 1, createdAt: -1 });
+
+  return result;
+}
