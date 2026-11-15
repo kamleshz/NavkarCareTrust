@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState, type FocusEvent } from "react";
 
 const registrationOptions = [
   { label: "Patient registration", href: "/patient-support" },
@@ -11,46 +11,70 @@ const registrationOptions = [
 ];
 
 export function RegistrationMarquee() {
-  const [paused, setPaused] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [manuallyPaused, setManuallyPaused] = useState(false);
+  const [interacting, setInteracting] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const paused = manuallyPaused || interacting || reducedMotion;
+
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setReducedMotion(preference.matches);
+    updatePreference();
+    preference.addEventListener("change", updatePreference);
+    return () => preference.removeEventListener("change", updatePreference);
+  }, []);
+
+  useEffect(() => {
+    if (paused) return;
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % registrationOptions.length);
+    }, 2800);
+    return () => window.clearInterval(timer);
+  }, [paused]);
+
+  function handleBlur(event: FocusEvent<HTMLElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setInteracting(false);
+    }
+  }
 
   return (
-    <section className="registration-strip" aria-label="Registration pathways">
-      <span className="registration-strip-label" aria-hidden="true">Register:</span>
-      <div className={`registration-marquee${paused ? " is-paused" : ""}`}>
-        <div className="registration-track">
-          {Array.from({ length: 4 }, (_, copyIndex) => {
-            const decorativeCopy = copyIndex > 0;
-
-            return (
-              <div
-                className="registration-group"
-                aria-hidden={decorativeCopy}
-                key={copyIndex}
-              >
-                {registrationOptions.map((option) => (
-                  <Link
-                    className="registration-link"
-                    href={option.href}
-                    key={option.label}
-                    tabIndex={decorativeCopy ? -1 : undefined}
-                  >
-                    {option.label}
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                ))}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+    <section
+      className="registration-strip"
+      aria-label="Registration pathways"
+      onMouseEnter={() => setInteracting(true)}
+      onMouseLeave={() => setInteracting(false)}
+      onFocus={() => setInteracting(true)}
+      onBlur={handleBlur}
+    >
+      <span className="registration-strip-label">Registration</span>
+      <nav className="registration-links" aria-label="Choose a registration type">
+        <span
+          className="registration-highlight"
+          aria-hidden="true"
+          style={{ transform: `translateX(${activeIndex * 100}%)` }}
+        />
+        {registrationOptions.map((option, index) => (
+          <Link
+            className="registration-link"
+            data-active={activeIndex === index}
+            href={option.href}
+            key={option.label}
+          >
+            {option.label}
+            <span aria-hidden="true">→</span>
+          </Link>
+        ))}
+      </nav>
       <button
         className="registration-motion-toggle"
         type="button"
-        aria-pressed={paused}
-        aria-label={paused ? "Resume moving registration links" : "Pause moving registration links"}
-        onClick={() => setPaused((current) => !current)}
+        aria-pressed={manuallyPaused}
+        aria-label={manuallyPaused ? "Resume registration highlight" : "Pause registration highlight"}
+        onClick={() => setManuallyPaused((current) => !current)}
       >
-        {paused ? "Play" : "Pause"}
+        {manuallyPaused ? "Resume" : "Pause"}
       </button>
     </section>
   );
