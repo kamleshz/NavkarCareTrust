@@ -12,6 +12,10 @@ async function main() {
   const { submitPartnerApplication, initialApplicationState } = await import(
     "../app/actions/partner-application"
   );
+  const {
+    submitPatientSupportRequest,
+    initialPatientSupportState,
+  } = await import("../app/actions/patient-support");
 
   const database = await getDatabase();
   await database.collection("resources").insertMany([
@@ -85,10 +89,36 @@ async function main() {
   assert.ok(saved?.createdAt instanceof Date);
   assert.equal(await database.collection("resources").countDocuments(), 3);
 
+  const patientFormData = new FormData();
+  patientFormData.set("fullName", "Demo Patient Applicant");
+  patientFormData.set("city", "Mumbai");
+  patientFormData.set("state", "Maharashtra");
+  patientFormData.set("preferredContact", "email");
+  patientFormData.set("email", "patient@example.org");
+  patientFormData.set("phone", "");
+  patientFormData.set("note", "Please help me find local support.");
+  patientFormData.set("consent", "yes");
+  patientFormData.set("website", "");
+
+  const patientResult = await submitPatientSupportRequest(
+    initialPatientSupportState,
+    patientFormData,
+  );
+  assert.equal(patientResult.success, true);
+
+  const patientRequest = await database
+    .collection("patientSupportRequests")
+    .findOne({ fullName: "Demo Patient Applicant" });
+  assert.equal(patientRequest?.reviewStatus, "pending");
+  assert.equal(patientRequest?.privacyConsent, true);
+  assert.ok(patientRequest?.consentAt instanceof Date);
+  assert.equal(patientRequest?.consent, undefined);
+
   console.log("MongoDB integration checks passed:");
   console.log("- case-insensitive city search returns only the published, non-demo record");
   console.log("- exact PIN + category search excludes demo and draft records");
   console.log("- valid partner application is stored privately with pending status");
+  console.log("- patient support request is saved separately with consent and pending status");
   await database.client.close();
   } finally {
     await server.stop();

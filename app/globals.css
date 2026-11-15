@@ -84,7 +84,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .button-primary:hover { background: #51378f; }
 .button-outline { color: #4d358a; border-color: #b9add8; background: #fff; }
 .button-outline:hover { background: var(--accent); }
-.header-join { min-height: 42px; white-space: nowrap; }
+.header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.header-support, .header-join { min-height: 42px; white-space: nowrap; }
 
 /* Directory */
 .directory-main { min-height: calc(100vh - 70px); padding: 20px 0 12px; background: var(--page); }
@@ -92,6 +93,20 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .directory-heading { margin-bottom: 15px; }
 .directory-heading h1 { margin: 0 0 4px; font-size: clamp(1.75rem, 2.35vw, 2rem); line-height: 1.2; letter-spacing: -.025em; }
 .directory-heading p { margin: 0; color: var(--muted); font-size: .94rem; }
+.registration-strip { min-height: 44px; margin: 0 0 10px; padding: 0 10px 0 14px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--support); }
+.registration-strip-label { color: #6246a8; font-size: .72rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.registration-marquee { min-width: 0; overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 2%, #000 98%, transparent); }
+.registration-track { width: max-content; display: flex; animation: registration-scroll 32s linear infinite; }
+.registration-group { display: flex; align-items: center; flex: none; }
+.registration-link { min-height: 42px; padding: 0 20px; display: inline-flex; align-items: center; gap: 8px; border-right: 1px solid #d8d0e9; color: #4d358a; font-size: .82rem; font-weight: 750; white-space: nowrap; }
+.registration-link:hover { color: #39256d; background: rgba(255, 255, 255, .6); }
+.registration-link span { font-size: 1rem; }
+.registration-motion-toggle { min-height: 30px; padding: 4px 9px; border: 1px solid #d5cdeb; border-radius: 7px; color: #4d358a; background: #fff; font-size: .72rem; font-weight: 750; cursor: pointer; }
+.registration-motion-toggle:hover { background: var(--accent); }
+.registration-marquee:hover .registration-track,
+.registration-marquee:focus-within .registration-track,
+.registration-marquee.is-paused .registration-track { animation-play-state: paused; }
+@keyframes registration-scroll { to { transform: translateX(-25%); } }
 .tabs-scroller { margin-inline: -2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
 .category-tabs { min-width: max-content; display: flex; gap: 4px; padding: 0 2px 7px; border-bottom: 1px solid var(--border); }
 .category-tab { position: relative; min-height: 38px; padding: 8px 15px; border: 1px solid transparent; border-radius: 8px 8px 0 0; color: #4e5569; background: transparent; font-size: .88rem; font-weight: 650; }
@@ -203,14 +218,19 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .form-card-heading { padding: 20px 24px; border-bottom: 1px solid var(--border); background: #faf9fd; }
 .form-card-heading h2 { margin: 0 0 3px; font-size: 1.35rem; }
 .form-card-heading p { margin: 0; color: var(--muted); font-size: .82rem; }
-.partner-form { padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 17px; }
+.partner-form, .patient-support-form { position: relative; padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 17px; }
 .full-span { grid-column: 1 / -1; }
 .form-field label, .category-filter label { display: block; margin-bottom: 5px; font-size: .81rem; font-weight: 750; }
 input, select, textarea { width: 100%; min-height: 44px; padding: 9px 11px; border: 1px solid #cdc6df; border-radius: 8px; color: var(--text); background: #fff; }
+input[type="checkbox"] { width: 18px; min-height: 18px; height: 18px; margin: 2px 0 0; padding: 0; flex: none; accent-color: #6246a8; }
 textarea { resize: vertical; }
 input:focus, select:focus, textarea:focus { outline: 0; border-color: #6246a8; box-shadow: 0 0 0 3px rgba(98, 70, 168, .14); }
 .optional, .field-help, .privacy-note { color: var(--muted); font-size: .75rem; }
+.field-help { margin: 5px 0 0; }
 .field-error { margin: 4px 0 0; color: var(--danger); font-size: .75rem; }
+.consent-field { display: flex !important; align-items: flex-start; gap: 10px; font-weight: 500 !important; line-height: 1.4; }
+.form-trap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.patient-safety-note { margin-top: 24px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--support); color: #59657d; font-size: .8rem; }
 .contact-fieldset { margin: 0; padding: 14px; border: 1px solid var(--border); border-radius: 9px; }
 .contact-fieldset legend { padding: 0 5px; font-size: .81rem; font-weight: 750; }
 .field-help { margin: -2px 0 10px; }
@@ -232,7 +252,7 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #6246a8; b
 
 @media (max-width: 900px) {
   :root { --gutter: 24px; }
-  .header-inner { grid-template-columns: 90px minmax(260px, 1fr) auto; gap: 14px; }
+  .header-inner { grid-template-columns: 90px minmax(180px, 1fr) auto; gap: 14px; }
   .join-layout { grid-template-columns: 1fr; }
   .join-intro { padding-top: 0; }
 }
@@ -250,8 +270,12 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #6246a8; b
   }
   .brand { width: 62px; height: 50px; justify-content: flex-start; }
   .brand-logo { width: 58px; }
-  .header-join { min-height: 38px; padding: 8px 11px; font-size: .78rem; }
+  .header-actions { gap: 6px; }
+  .header-support, .header-join { min-height: 38px; padding: 8px 9px; font-size: .72rem; }
   .header-search { width: 100%; height: 42px; grid-column: 1 / -1; grid-row: 2; }
+  .registration-strip { grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; padding-inline: 9px; }
+  .registration-link { padding-inline: 14px; font-size: .76rem; }
+  .registration-motion-toggle { padding-inline: 7px; }
   .directory-main { min-height: calc(100vh - 116px); padding: 16px 0 10px; }
   .directory-heading { margin-bottom: 12px; }
   .directory-heading h1 { font-size: clamp(1.4rem, 6.4vw, 1.6rem); }
@@ -271,7 +295,7 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #6246a8; b
   .footer-inner { align-items: flex-start; flex-direction: column; gap: 8px; }
   .join-page { min-height: calc(100vh - 116px); padding: 24px 0 40px; }
   .join-intro h1 { font-size: 1.8rem; }
-  .partner-form { padding: 18px; grid-template-columns: 1fr; }
+  .partner-form, .patient-support-form { padding: 18px; grid-template-columns: 1fr; }
   .full-span { grid-column: auto; }
   .contact-fields { grid-template-columns: 1fr; }
   .form-card-heading { padding: 18px; }
@@ -279,4 +303,7 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #6246a8; b
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .registration-marquee { overflow-x: auto; mask-image: none; scrollbar-width: thin; }
+  .registration-track { animation: none; }
+  .registration-group[aria-hidden="true"], .registration-motion-toggle { display: none; }
 }

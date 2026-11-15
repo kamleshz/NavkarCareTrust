@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CategoryTabs } from "@/components/category-tabs";
 import { DirectoryResults } from "@/components/directory-results";
+import { RegistrationMarquee } from "@/components/registration-marquee";
 import { getEmptyDirectoryState } from "@/lib/directory-state";
 import { getPublishedResources, partitionResourcesByLocation } from "@/lib/resources";
 import { categoryLabels, resourceCategories, type ResourceCategory } from "@/lib/types";
@@ -67,6 +68,7 @@ export async function DirectoryPage({ searchParams }: { searchParams: Promise<Di
       <main className="directory-main">
         <div className="directory-container">
           <DirectoryHeading />
+          <RegistrationMarquee />
           <CategoryTabs activeCategory={category} />
           <div className="state-panel error-panel" role="alert">
             <h2>Directory unavailable</h2>
@@ -91,6 +93,7 @@ export async function DirectoryPage({ searchParams }: { searchParams: Promise<Di
     <main className="directory-main">
       <div className="directory-container">
         <DirectoryHeading />
+        <RegistrationMarquee />
         <CategoryTabs activeCategory={category} />
 
         <section className="directory-results" role="tabpanel" aria-label={category ? categoryLabels[category] : "All support"}>

@@ -5,14 +5,14 @@ import {
   initialApplicationState,
   submitPartnerApplication,
 } from "@/app/actions/partner-application";
-import { partnerTypeLabels, partnerTypes } from "@/lib/types";
+import { partnerTypeLabels, partnerTypes, type PartnerType } from "@/lib/types";
 
 function FieldError({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;
   return <p className="field-error">{errors[0]}</p>;
 }
 
-export function PartnerForm() {
+export function PartnerForm({ initialType }: { initialType?: PartnerType }) {
   const [state, formAction, pending] = useActionState(
     submitPartnerApplication,
     initialApplicationState,
@@ -37,14 +37,14 @@ export function PartnerForm() {
   return (
     <form action={formAction} className="partner-form" noValidate>
       <div className="form-field full-span">
-        <label htmlFor="organisationName">Organisation name</label>
+        <label htmlFor="organisationName">Provider or organisation name</label>
         <input id="organisationName" name="organisationName" required />
         <FieldError errors={errors.organisationName} />
       </div>
 
       <div className="form-field full-span">
-        <label htmlFor="partnerType">Partner type</label>
-        <select id="partnerType" name="partnerType" defaultValue="" required>
+        <label htmlFor="partnerType">Provider type</label>
+        <select id="partnerType" name="partnerType" defaultValue={initialType || ""} required>
           <option value="" disabled>Select a partner type</option>
           {partnerTypes.map((type) => (
             <option key={type} value={type}>{partnerTypeLabels[type]}</option>

@@ -30,7 +30,7 @@ export const partnerTypeLabels: Record<PartnerType, string> = {
   "hospital-or-cancer-institute": "Hospital or cancer institute",
   pharmacy: "Pharmacy",
   "pharmaceutical-company": "Pharmaceutical company",
-  ngo: "NGO",
+  ngo: "NGO / Trust",
   "government-or-other": "Government or other organisation",
 };
 

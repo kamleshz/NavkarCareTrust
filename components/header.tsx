@@ -75,9 +75,14 @@ export function Header() {
           </button>
         </form>
 
-        <Link className="button button-outline header-join" href="/join">
-          Join the Network
-        </Link>
+        <nav className="header-actions" aria-label="Get involved">
+          <Link className="button button-primary header-support" href="/patient-support">
+            Get Support
+          </Link>
+          <Link className="button button-outline header-join" href="/join">
+            Join the Network
+          </Link>
+        </nav>
       </div>
     </header>
   );

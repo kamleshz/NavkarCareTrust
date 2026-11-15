@@ -1,21 +1,32 @@
 import type { Metadata } from "next";
 import { PartnerForm } from "@/components/partner-form";
+import { partnerTypes, type PartnerType } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Join the network",
   description: "Apply to join the NavkarCareTrust cancer support network.",
 };
 
-export default function JoinPage() {
+export default async function JoinPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string | string[] }>;
+}) {
+  const { type } = await searchParams;
+  const initialType =
+    typeof type === "string" && partnerTypes.includes(type as PartnerType)
+      ? (type as PartnerType)
+      : undefined;
+
   return (
     <main className="join-page">
       <div className="shell join-layout">
         <section className="join-intro">
           <p className="eyebrow">Partner with us</p>
-          <h1>Help families find the right support</h1>
+          <h1>Join the cancer support network</h1>
           <p className="join-lead">
-            If your organisation supports cancer patients in India, share your
-            details for review by the NavkarCareTrust team.
+            Doctors, hospitals, cancer centres, pharmacies, NGOs, and trusts can
+            share their details for review by the Navkar Care Trust team.
           </p>
           <div className="review-steps">
             <div><span>1</span><p><strong>Apply</strong>Share your organisation and contact details.</p></div>
@@ -25,10 +36,10 @@ export default function JoinPage() {
         </section>
         <section className="form-card" aria-labelledby="application-title">
           <div className="form-card-heading">
-            <h2 id="application-title">Partner application</h2>
-            <p>All fields are required unless marked optional.</p>
+          <h2 id="application-title">Provider application</h2>
+          <p>Choose your provider type. Applications are reviewed privately.</p>
           </div>
-          <PartnerForm />
+          <PartnerForm initialType={initialType} />
         </section>
       </div>
     </main>

@@ -7,7 +7,10 @@ import {
   resolveSearchState,
 } from "../lib/resources";
 import type { PublicResource } from "../lib/types";
-import { partnerApplicationSchema } from "../lib/validation";
+import {
+  partnerApplicationSchema,
+  patientSupportRequestSchema,
+} from "../lib/validation";
 
 function listing(overrides: Partial<PublicResource>): PublicResource {
   return {
@@ -127,6 +130,26 @@ test("partner application requires at least one contact method", () => {
   };
   assert.equal(partnerApplicationSchema.safeParse({ ...base, email: "", phone: "" }).success, false);
   assert.equal(partnerApplicationSchema.safeParse({ ...base, email: "partner@example.org", phone: "" }).success, true);
+});
+
+test("patient request requires consent and a reachable preferred contact", () => {
+  const base = {
+    fullName: "Patient Example",
+    city: "Mumbai",
+    state: "",
+    preferredContact: "phone",
+    email: "",
+    phone: "9876543210",
+    note: "",
+    consent: "yes",
+  };
+
+  assert.equal(patientSupportRequestSchema.safeParse(base).success, true);
+  assert.equal(
+    patientSupportRequestSchema.safeParse({ ...base, phone: "", email: "person@example.org" }).success,
+    false,
+  );
+  assert.equal(patientSupportRequestSchema.safeParse({ ...base, consent: "" }).success, false);
 });
 
 test("empty directory copy distinguishes unfiltered and filtered states", () => {
