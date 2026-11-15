@@ -20,6 +20,10 @@ export const partnerTypes = [
   "pharmacy",
   "pharmaceutical-company",
   "ngo",
+  "trust",
+  "temple",
+  "industry",
+  "political-party",
   "government-or-other",
 ] as const;
 
@@ -29,8 +33,12 @@ export const partnerTypeLabels: Record<PartnerType, string> = {
   doctor: "Doctor",
   "hospital-or-cancer-institute": "Hospital or cancer institute",
   pharmacy: "Pharmacy",
-  "pharmaceutical-company": "Pharmaceutical company",
-  ngo: "NGO / Trust",
+  "pharmaceutical-company": "Pharma",
+  ngo: "NGO",
+  trust: "Trust",
+  temple: "Temple",
+  industry: "Industry",
+  "political-party": "Political party",
   "government-or-other": "Government or other organisation",
 };
 

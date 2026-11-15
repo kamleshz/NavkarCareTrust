@@ -25,8 +25,9 @@ export default async function JoinPage({
           <p className="eyebrow">Partner with us</p>
           <h1>Join the cancer support network</h1>
           <p className="join-lead">
-            Doctors, hospitals, cancer centres, pharmacies, NGOs, and trusts can
-            share their details for review by the Navkar Care Trust team.
+            Doctors, hospitals, pharmacies, pharma companies, NGOs, trusts,
+            temples, industries, and political parties can share their details
+            for review by the Navkar Care Trust team.
           </p>
           <div className="review-steps">
             <div><span>1</span><p><strong>Apply</strong>Share your organisation and contact details.</p></div>

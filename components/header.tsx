@@ -3,8 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, useRef } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { SearchIcon } from "@/components/icons";
+
+const partnerMenuOptions = [
+  { label: "Pharma", type: "pharmaceutical-company" },
+  { label: "Doctors", type: "doctor" },
+  { label: "Trust", type: "trust" },
+  { label: "NGO", type: "ngo" },
+  { label: "Temples", type: "temple" },
+  { label: "Industries", type: "industry" },
+  { label: "Political Parties", type: "political-party" },
+] as const;
 
 export function Header() {
   const pathname = usePathname();
@@ -12,6 +22,7 @@ export function Header() {
   const router = useRouter();
   const locationParam = searchParams.get("location") || "";
   const inputRef = useRef<HTMLInputElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const directoryPath = pathname === "/" || pathname === "/support" ? pathname : "/support";
 
@@ -77,11 +88,40 @@ export function Header() {
 
         <nav className="header-actions" aria-label="Get involved">
           <Link className="button button-primary header-support" href="/patient-support">
-            Get Support
+            For Patients
           </Link>
-          <Link className="button button-outline header-join" href="/join">
-            Join the Network
-          </Link>
+          <div className="header-menu">
+            <button
+              type="button"
+              className="button button-outline header-join"
+              aria-haspopup="true"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
+              onBlur={(event) => {
+                if (!event.currentTarget.parentElement?.contains(event.relatedTarget as Node | null)) {
+                  setMenuOpen(false);
+                }
+              }}
+            >
+              For Organisations ▾
+            </button>
+            {menuOpen && (
+              <ul className="partner-menu" role="menu" aria-label="Choose a registration type">
+                {partnerMenuOptions.map((option) => (
+                  <li key={option.type} role="none">
+                    <Link
+                      role="menuitem"
+                      href={`/join?type=${option.type}`}
+                      onClick={() => setMenuOpen(false)}
+                      onMouseDown={(event) => event.preventDefault()}
+                    >
+                      {option.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </nav>
       </div>
     </header>
