@@ -2,17 +2,7 @@
 
 import { getDatabase } from "@/lib/mongodb";
 import { patientSupportRequestSchema } from "@/lib/validation";
-
-export interface PatientSupportFormState {
-  success: boolean;
-  message: string;
-  errors?: Record<string, string[]>;
-}
-
-export const initialPatientSupportState: PatientSupportFormState = {
-  success: false,
-  message: "",
-};
+import type { PatientSupportFormState } from "@/lib/action-state";
 
 const receivedMessage =
   "Your request has been received and is waiting for review by our team.";

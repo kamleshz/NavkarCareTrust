@@ -1,6 +1,10 @@
-import type { Filter } from "mongodb";
+import type { Filter, ObjectId } from "mongodb";
 import { DatabaseConfigurationError, getDatabase } from "@/lib/mongodb";
+import { toPublicResource } from "@/lib/listings";
+import { toObjectId } from "@/lib/object-id";
 import {
+  isMumbaiSubRegion,
+  mumbaiSubRegions,
   resourceCategories,
   type PublicResource,
   type ResourceCategory,
@@ -8,7 +12,10 @@ import {
 } from "@/lib/types";
 
 export interface ResourceFilters {
-  location?: string;
+  /** Free text: name, specialty, service, locality, city, or an exact 6-digit PIN. */
+  search?: string;
+  /** Browsing region id, including "all-mumbai". */
+  region?: string;
   category?: string;
 }
 
@@ -20,116 +27,63 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-const knownSearchCities: Record<string, string> = {
-  mumbai: "Maharashtra",
-  "navi mumbai": "Maharashtra",
-  parel: "Maharashtra",
-  kharghar: "Maharashtra",
-  ahmedabad: "Gujarat",
-};
-
-// First two digits of an Indian PIN code identify the postal circle. Only the
-// circles covered by the current listings are mapped.
-const stateByPinPrefix: Record<string, string> = {
-  "36": "Gujarat",
-  "37": "Gujarat",
-  "38": "Gujarat",
-  "39": "Gujarat",
-  "40": "Maharashtra",
-  "41": "Maharashtra",
-  "42": "Maharashtra",
-  "43": "Maharashtra",
-  "44": "Maharashtra",
-};
-
-export function resolveSearchState(location?: string) {
-  if (!location) return undefined;
-  const normalized = location.trim().toLowerCase();
-  if (/^\d{6}$/.test(normalized)) return stateByPinPrefix[normalized.slice(0, 2)];
-  return knownSearchCities[normalized];
-}
-
-export function isDirectLocationMatch(resource: PublicResource, location: string) {
-  const normalized = location.trim().toLowerCase();
-  if (!normalized) return true;
-  if (/^\d{6}$/.test(normalized)) return resource.pinCode === normalized;
-  return resource.city?.toLowerCase() === normalized || resource.locality?.toLowerCase() === normalized;
-}
-
 /**
- * Splits results into listings that match the searched location directly and
- * broader nationwide, participating-network, or regional programmes that are
- * only available to check.
+ * Combines search, region, and category filters into a single MongoDB query.
+ * Only published, non-demo records are ever visible publicly.
  */
-export function partitionResourcesByLocation(resources: PublicResource[], location?: string) {
-  const normalized = location?.trim() ?? "";
-  if (!normalized) return { local: resources, alsoAvailable: [] as PublicResource[] };
+export function buildPublicResourceFilter(filters: ResourceFilters): Filter<ResourceDocument> {
+  const conditions: Filter<ResourceDocument>[] = [
+    { publicationStatus: "published" },
+    { isDemo: { $ne: true } },
+  ];
 
-  const local: PublicResource[] = [];
-  const alsoAvailable: PublicResource[] = [];
-  for (const resource of resources) {
-    if (isDirectLocationMatch(resource, normalized)) local.push(resource);
-    else alsoAvailable.push(resource);
+  if (filters.category && resourceCategories.includes(filters.category as ResourceCategory)) {
+    conditions.push({ category: filters.category as ResourceCategory });
   }
-  return { local, alsoAvailable };
+
+  const region = filters.region?.trim();
+  if (region === "all-mumbai") {
+    conditions.push({ region: { $in: [...mumbaiSubRegions] } });
+  } else if (isMumbaiSubRegion(region)) {
+    conditions.push({ region });
+  }
+
+  const search = filters.search?.trim();
+  if (search) {
+    if (/^\d{6}$/.test(search)) {
+      conditions.push({ pinCode: search });
+    } else {
+      const pattern = { $regex: escapeRegExp(search), $options: "i" } as const;
+      conditions.push({
+        $or: [
+          { name: pattern },
+          { specialty: pattern },
+          { services: pattern },
+          { locality: pattern },
+          { city: pattern },
+        ],
+      });
+    }
+  }
+
+  return conditions.length === 1 ? conditions[0] : { $and: conditions };
 }
 
-export function buildPublicResourceFilter(
-  filters: ResourceFilters,
-): Filter<ResourceDocument> {
-  const query: Filter<ResourceDocument> = {
-    publicationStatus: "published",
-    isDemo: { $ne: true },
-  };
-  const location = filters.location?.trim();
-
-  if (location) {
-    const state = resolveSearchState(location);
-    const localCondition: Filter<ResourceDocument> = /^\d{6}$/.test(location)
-      ? { pinCode: location }
-      : {
-          $or: [
-            { city: { $regex: `^${escapeRegExp(location)}$`, $options: "i" } },
-            { locality: { $regex: `^${escapeRegExp(location)}$`, $options: "i" } },
-          ],
-        };
-    const availabilityConditions: Filter<ResourceDocument>[] = [
-      { coverageType: "national" },
-      { coverageType: "participating-network" },
-    ];
-    if (state) availabilityConditions.push({ coverageType: "regional", state });
-
-    query.$or = [localCondition, ...availabilityConditions];
-  }
-
-  if (
-    filters.category &&
-    resourceCategories.includes(filters.category as ResourceCategory)
-  ) {
-    query.category = filters.category as ResourceCategory;
-  }
-
-  return query;
-}
-
-export async function getPublishedResources(
-  filters: ResourceFilters,
-): Promise<ResourceResult> {
+export async function getPublishedResources(filters: ResourceFilters): Promise<ResourceResult> {
   try {
     const db = await getDatabase();
     const documents = await db
       .collection<ResourceDocument>("resources")
       .find(buildPublicResourceFilter(filters))
       .sort({ name: 1 })
+      .limit(300)
       .toArray();
 
     return {
       ok: true,
-      resources: documents.map(({ _id, ...resource }) => ({
-        ...resource,
-        id: _id.toHexString(),
-        lastReviewedAt: resource.lastReviewedAt.toISOString(),
-      })),
+      resources: documents.map((document) =>
+        toPublicResource(document as ResourceDocument & { _id: ObjectId }),
+      ),
     };
   } catch (error) {
     console.error("Unable to load resources", error);
@@ -140,5 +94,69 @@ export async function getPublishedResources(
           ? error.message
           : "We could not load the directory right now. Please try again shortly.",
     };
+  }
+}
+
+/** Loads a single published listing for the details view and enquiry form. */
+export async function getPublishedResource(idOrSlug: string): Promise<PublicResource | null> {
+  try {
+    const db = await getDatabase();
+    const objectId = toObjectId(idOrSlug);
+    const document = await db.collection<ResourceDocument>("resources").findOne({
+      publicationStatus: "published",
+      isDemo: { $ne: true },
+      ...(objectId ? { _id: objectId } : { slug: idOrSlug }),
+    });
+    if (!document) return null;
+    return toPublicResource(document as ResourceDocument & { _id: ObjectId });
+  } catch (error) {
+    console.error("Unable to load resource", error);
+    return null;
+  }
+}
+
+/**
+ * Published listing counts per category, straight from the database.
+ * Returns null when the database is unreachable so no count is ever invented.
+ */
+export async function getPublishedCategoryCounts(): Promise<Record<string, number> | null> {
+  try {
+    const db = await getDatabase();
+    const rows = await db
+      .collection<ResourceDocument>("resources")
+      .aggregate<{ _id: ResourceCategory; count: number }>([
+        { $match: { publicationStatus: "published", isDemo: { $ne: true } } },
+        { $group: { _id: "$category", count: { $sum: 1 } } },
+      ])
+      .toArray();
+
+    const counts: Record<string, number> = {};
+    for (const row of rows) {
+      if (resourceCategories.includes(row._id)) counts[row._id] = row.count;
+    }
+    return counts;
+  } catch (error) {
+    console.error("Unable to load category counts", error);
+    return null;
+  }
+}
+
+/** Recently added published listings, for the overview page. */
+export async function getRecentPublishedResources(limit = 4): Promise<PublicResource[]> {
+  try {
+    const db = await getDatabase();
+    const documents = await db
+      .collection<ResourceDocument>("resources")
+      .find({ publicationStatus: "published", isDemo: { $ne: true } })
+      .sort({ lastReviewedAt: -1, name: 1 })
+      .limit(limit)
+      .toArray();
+
+    return documents.map((document) =>
+      toPublicResource(document as ResourceDocument & { _id: ObjectId }),
+    );
+  } catch (error) {
+    console.error("Unable to load recent listings", error);
+    return [];
   }
 }

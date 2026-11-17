@@ -12,9 +12,11 @@
     "test:integration": "tsx tests/mongodb.integration.ts"
   },
   "dependencies": {
+    "@types/qrcode": "^1.5.6",
     "dotenv": "^17.0.0",
     "mongodb": "^7.0.0",
     "next": "^16.0.0",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^4.0.0"

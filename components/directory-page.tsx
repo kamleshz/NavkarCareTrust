@@ -1,31 +1,53 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import { CategoryTabs } from "@/components/category-tabs";
 import { DirectoryResults } from "@/components/directory-results";
-import { RegistrationMarquee } from "@/components/registration-marquee";
 import { getEmptyDirectoryState } from "@/lib/directory-state";
-import { getPublishedResources, partitionResourcesByLocation } from "@/lib/resources";
-import { categoryLabels, resourceCategories, type ResourceCategory } from "@/lib/types";
+import {
+  allSupportHeading,
+  allSupportRoute,
+  categoryHeadings,
+  legacyDirectoryRedirect,
+  routeForCategory,
+  type DirectorySearchParams,
+} from "@/lib/navigation";
+import { getPublishedResource, getPublishedResources, type ResourceFilters } from "@/lib/resources";
+import {
+  isRegionId,
+  regionLabels,
+  type PublicResource,
+  type RegionId,
+  type ResourceCategory,
+} from "@/lib/types";
 
 const PAGE_SIZE = 6;
 
-export interface DirectorySearchParams {
-  location?: string;
-  category?: string;
-  page?: string;
+interface DirectoryPageProps {
+  searchParams: Promise<DirectorySearchParams>;
+  /** Category fixed by the route. Omitted on the combined /support page. */
+  category?: ResourceCategory;
 }
 
-function pageHref(params: DirectorySearchParams, page: number) {
-  const next = new URLSearchParams();
-  if (params.location) next.set("location", params.location);
-  if (params.category) next.set("category", params.category);
-  if (page > 1) next.set("page", String(page));
-  const query = next.toString();
-  return query ? `?${query}` : "?";
+interface NormalizedFilters {
+  search: string;
+  region: "" | RegionId;
 }
 
-function countLabel(count: number, noun: string) {
-  return `${count} ${count === 1 ? noun : `${noun}s`}`;
+function listingParam(params: DirectorySearchParams) {
+  return typeof params.listing === "string" ? params.listing.trim() : "";
+}
+
+function hrefFor(filters: NormalizedFilters, page: number) {
+  const query = new URLSearchParams();
+  if (filters.search) query.set("q", filters.search);
+  if (filters.region) query.set("region", filters.region);
+  if (page > 1) query.set("page", String(page));
+  const value = query.toString();
+  return value ? `?${value}` : "?";
+}
+
+function countLabel(count: number) {
+  return `${count} ${count === 1 ? "listing" : "listings"}`;
 }
 
 function EmptyState({
@@ -54,112 +76,127 @@ function EmptyState({
   );
 }
 
-export async function DirectoryPage({ searchParams }: { searchParams: Promise<DirectorySearchParams> }) {
+/**
+ * Shared directory listing. The category comes from the route, while city, PIN,
+ * and region filters live in the query string so they survive category changes.
+ */
+export async function DirectoryPage({ searchParams, category }: DirectoryPageProps) {
   const rawParams = await searchParams;
-  const location = typeof rawParams.location === "string" ? rawParams.location.trim() : "";
-  const category = resourceCategories.includes(rawParams.category as ResourceCategory)
-    ? (rawParams.category as ResourceCategory)
-    : "";
-  const requestedPage = Number.parseInt(rawParams.page || "1", 10);
-  const result = await getPublishedResources({ location, category });
+  const pathname = category ? routeForCategory(category) : allSupportRoute;
+
+  // Existing shared directory URLs still resolve to the right page.
+  const redirectTarget = legacyDirectoryRedirect(pathname, rawParams);
+  if (redirectTarget) redirect(redirectTarget);
+
+  const filters: NormalizedFilters = {
+    search: typeof rawParams.q === "string" ? rawParams.q.trim() : "",
+    region: isRegionId(rawParams.region) ? rawParams.region : "",
+  };
+  const heading = category ? categoryHeadings[category] : allSupportHeading;
+
+  const result = await getPublishedResources(toQueryFilters(filters, category));
 
   if (!result.ok) {
     return (
       <main className="directory-main">
         <div className="directory-container">
-          <DirectoryHeading />
-          <RegistrationMarquee />
-          <CategoryTabs activeCategory={category} />
+          <DirectoryHeading title={heading.title} description={heading.description} />
           <div className="state-panel error-panel" role="alert">
             <h2>Directory unavailable</h2>
             <p>{result.message}</p>
-            <Link className="button button-primary" href="/support">Try again</Link>
+            <Link className="button button-primary" href={pathname}>
+              Try again
+            </Link>
           </div>
         </div>
       </main>
     );
   }
 
-  const { local, alsoAvailable } = partitionResourcesByLocation(result.resources, location);
-  const totalPages = Math.max(1, Math.ceil(local.length / PAGE_SIZE));
-  const currentPage = Math.min(Math.max(Number.isFinite(requestedPage) ? requestedPage : 1, 1), totalPages);
-  const visibleResources = local.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const normalizedParams = { location, category };
-  const hasActiveFilters = Boolean(location || category);
+  const openListing = listingParam(rawParams);
+  const selected: PublicResource | null = openListing
+    ? await getPublishedResource(openListing)
+    : null;
+
+  const total = result.resources.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const requestedPage = Number.parseInt(rawParams.page || "1", 10);
+  const currentPage = Math.min(
+    Math.max(Number.isFinite(requestedPage) ? requestedPage : 1, 1),
+    totalPages,
+  );
+  const visible = result.resources.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const hasActiveFilters = Boolean(filters.search || filters.region);
   const emptyState = getEmptyDirectoryState(hasActiveFilters);
-  const hasAnyResult = local.length > 0 || alsoAvailable.length > 0;
+  const activeRegionLabel = filters.region ? regionLabels[filters.region] : "";
 
   return (
     <main className="directory-main">
       <div className="directory-container">
-        <DirectoryHeading />
-        <RegistrationMarquee />
-        <CategoryTabs activeCategory={category} />
+        <DirectoryHeading title={heading.title} description={heading.description} />
 
-        <section className="directory-results" role="tabpanel" aria-label={category ? categoryLabels[category] : "All support"}>
+        <section className="directory-results" aria-label={heading.title}>
           <div className="results-toolbar">
             <div>
-              <strong>{countLabel(local.length, "listing")}</strong>
-              <span>{location ? ` in ${location}` : " across all locations"}</span>
-              {alsoAvailable.length > 0 && (
-                <span>{` · ${countLabel(alsoAvailable.length, "programme")} to check`}</span>
+              <strong>{countLabel(total)}</strong>
+              {activeRegionLabel ? (
+                <span>{` in ${activeRegionLabel}`}</span>
+              ) : (
+                <span> across all regions</span>
               )}
+              {filters.search && <span>{` · matching “${filters.search}”`}</span>}
             </div>
-            {(location || category) && <Link href="?" className="clear-filters">Clear filters</Link>}
+            {hasActiveFilters && (
+              <Link href="?" className="clear-filters">
+                Clear filters
+              </Link>
+            )}
           </div>
 
-          {visibleResources.length > 0 && <DirectoryResults resources={visibleResources} />}
+          {visible.length > 0 && <DirectoryResults resources={visible} selected={selected} />}
 
-          {local.length === 0 && alsoAvailable.length > 0 && (
-            <EmptyState
-              title={`No listings directly in ${location}`}
-              description="Some nationwide or participating programmes may still be worth checking below."
-            />
-          )}
-
-          {!hasAnyResult && (
+          {total === 0 && (
             <EmptyState
               title={emptyState.title}
               description={emptyState.description}
-              action={emptyState.showClearFilters ? <Link className="button button-primary" href="?">Clear filters</Link> : undefined}
+              action={
+                emptyState.showClearFilters ? (
+                  <Link className="button button-primary" href="?">
+                    Clear filters
+                  </Link>
+                ) : undefined
+              }
             />
           )}
 
           {totalPages > 1 && (
             <nav className="pagination" aria-label="Directory pages">
               <Link
-                href={pageHref(normalizedParams, currentPage - 1)}
+                href={hrefFor(filters, currentPage - 1)}
                 aria-disabled={currentPage === 1}
                 tabIndex={currentPage === 1 ? -1 : 0}
+                rel="prev"
               >
                 Previous
               </Link>
-              <span>Page {currentPage} of {totalPages}</span>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
               <Link
-                href={pageHref(normalizedParams, currentPage + 1)}
+                href={hrefFor(filters, currentPage + 1)}
                 aria-disabled={currentPage === totalPages}
                 tabIndex={currentPage === totalPages ? -1 : 0}
+                rel="next"
               >
                 Next
               </Link>
             </nav>
           )}
 
-          {alsoAvailable.length > 0 && (
-            <section className="also-available" aria-labelledby="also-available-title">
-              <div className="also-available-heading">
-                <h2 id="also-available-title">Also available to check</h2>
-                <p>
-                  Nationwide, participating-network, and state-wide programmes. Availability at{" "}
-                  {location || "your location"} is not confirmed — check the coverage conditions on each listing.
-                </p>
-              </div>
-              <DirectoryResults resources={alsoAvailable} />
-            </section>
-          )}
-
           <p className="directory-guidance">
-            Information is for navigation only. Confirm availability, costs, and eligibility directly with each organisation.
+            Information is for navigation only. Confirm availability, costs, and eligibility directly with
+            each organisation.
           </p>
         </section>
       </div>
@@ -167,11 +204,22 @@ export async function DirectoryPage({ searchParams }: { searchParams: Promise<Di
   );
 }
 
-function DirectoryHeading() {
+function toQueryFilters(
+  filters: NormalizedFilters,
+  category?: ResourceCategory,
+): ResourceFilters {
+  return {
+    search: filters.search || undefined,
+    region: filters.region || undefined,
+    category,
+  };
+}
+
+function DirectoryHeading({ title, description }: { title: string; description: string }) {
   return (
     <div className="directory-heading">
-      <h1>Find cancer care and financial support</h1>
-      <p>Browse reviewed hospitals, specialists, medicine assistance, and financial aid programmes in India.</p>
+      <h1>{title}</h1>
+      <p>{description}</p>
     </div>
   );
 }

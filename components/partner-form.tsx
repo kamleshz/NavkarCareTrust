@@ -1,10 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import {
-  initialApplicationState,
-  submitPartnerApplication,
-} from "@/app/actions/partner-application";
+import { submitPartnerApplication } from "@/app/actions/partner-application";
+import { initialApplicationState } from "@/lib/action-state";
 import { partnerTypeLabels, partnerTypes, type PartnerType } from "@/lib/types";
 
 function FieldError({ errors }: { errors?: string[] }) {

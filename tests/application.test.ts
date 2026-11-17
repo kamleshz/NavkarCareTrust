@@ -1,122 +1,84 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getEmptyDirectoryState } from "../lib/directory-state";
-import {
-  buildPublicResourceFilter,
-  partitionResourcesByLocation,
-  resolveSearchState,
-} from "../lib/resources";
-import type { PublicResource } from "../lib/types";
+import { buildPublicResourceFilter } from "../lib/resources";
+import { enquiryTypeForCategory, mumbaiSubRegions } from "../lib/types";
 import {
   partnerApplicationSchema,
   patientSupportRequestSchema,
 } from "../lib/validation";
 
-function listing(overrides: Partial<PublicResource>): PublicResource {
-  return {
-    id: "listing",
-    name: "Listing",
-    category: "hospitals",
-    organisationType: "Cancer hospital",
-    description: "Description",
-    contactDetails: {},
-    publicationStatus: "published",
-    lastReviewedAt: "2026-11-15T00:00:00.000Z",
-    ...overrides,
-  };
+/** Splits a combined filter into its individual conditions for assertions. */
+function conditionsOf(filter: ReturnType<typeof buildPublicResourceFilter>) {
+  return (filter.$and ?? [filter]) as Record<string, unknown>[];
 }
 
-test("city filtering is case-insensitive and only includes published resources", () => {
-  const filter = buildPublicResourceFilter({ location: "aHmEdAbAd" });
-  assert.equal(filter.publicationStatus, "published");
-  assert.deepEqual(filter.isDemo, { $ne: true });
-  assert.deepEqual(filter.$or, [
-    {
-      $or: [
-        { city: { $regex: "^aHmEdAbAd$", $options: "i" } },
-        { locality: { $regex: "^aHmEdAbAd$", $options: "i" } },
-      ],
-    },
-    { coverageType: "national" },
-    { coverageType: "participating-network" },
-    { coverageType: "regional", state: "Gujarat" },
+test("published, non-demo records are always required", () => {
+  assert.deepEqual(conditionsOf(buildPublicResourceFilter({})), [
+    { publicationStatus: "published" },
+    { isDemo: { $ne: true } },
   ]);
 });
 
-test("a 6-digit location becomes an exact PIN filter", () => {
-  const filter = buildPublicResourceFilter({ location: "380009" });
-  assert.equal(filter.publicationStatus, "published");
-  assert.deepEqual(filter.$or, [
-    { pinCode: "380009" },
-    { coverageType: "national" },
-    { coverageType: "participating-network" },
-    { coverageType: "regional", state: "Gujarat" },
-  ]);
-});
-
-test("a Maharashtra search also includes state-wide programmes", () => {
-  const filter = buildPublicResourceFilter({ location: "Mumbai" });
-  assert.deepEqual((filter.$or as unknown[]).at(-1), {
-    coverageType: "regional",
-    state: "Maharashtra",
+test("a search term matches name, specialty, services, locality, or city", () => {
+  const and = conditionsOf(buildPublicResourceFilter({ search: "Ahmedabad" }));
+  assert.deepEqual(and.at(-1), {
+    $or: [
+      { name: { $regex: "Ahmedabad", $options: "i" } },
+      { specialty: { $regex: "Ahmedabad", $options: "i" } },
+      { services: { $regex: "Ahmedabad", $options: "i" } },
+      { locality: { $regex: "Ahmedabad", $options: "i" } },
+      { city: { $regex: "Ahmedabad", $options: "i" } },
+    ],
   });
 });
 
-test("an unknown location still matches nationwide and participating programmes", () => {
-  const filter = buildPublicResourceFilter({ location: "Somewhere" });
-  assert.deepEqual(filter.$or, [
-    {
-      $or: [
-        { city: { $regex: "^Somewhere$", $options: "i" } },
-        { locality: { $regex: "^Somewhere$", $options: "i" } },
-      ],
-    },
-    { coverageType: "national" },
-    { coverageType: "participating-network" },
-  ]);
+test("regex metacharacters in a search term are escaped", () => {
+  const and = conditionsOf(buildPublicResourceFilter({ search: "a.b" }));
+  const or = (and.at(-1)?.$or ?? []) as Record<string, { $regex: string }>[];
+  assert.equal(or[0].name.$regex, "a\\.b");
 });
 
-test("state resolution uses known cities and PIN circles only", () => {
-  assert.equal(resolveSearchState("Mumbai"), "Maharashtra");
-  assert.equal(resolveSearchState("400012"), "Maharashtra");
-  assert.equal(resolveSearchState("380009"), "Gujarat");
-  assert.equal(resolveSearchState("Ahmedabad"), "Gujarat");
-  assert.equal(resolveSearchState("Jaipur"), undefined);
-  assert.equal(resolveSearchState("999999"), undefined);
-  assert.equal(resolveSearchState(""), undefined);
+test("an exact six-digit search becomes a PIN filter", () => {
+  const and = conditionsOf(buildPublicResourceFilter({ search: "400012" }));
+  assert.deepEqual(and.at(-1), { pinCode: "400012" });
+});
+
+test("All Mumbai covers every Mumbai sub-region", () => {
+  const and = conditionsOf(buildPublicResourceFilter({ region: "all-mumbai" }));
+  assert.deepEqual(and.at(-1), { region: { $in: [...mumbaiSubRegions] } });
+});
+
+test("a specific region is applied directly and an unknown region is ignored", () => {
+  const matched = conditionsOf(buildPublicResourceFilter({ region: "south-mumbai" }));
+  assert.deepEqual(matched.at(-1), { region: "south-mumbai" });
+
+  const ignored = conditionsOf(buildPublicResourceFilter({ region: "nowhere" }));
+  assert.equal(ignored.length, 2);
 });
 
 test("valid category is applied while an unknown category is ignored", () => {
-  assert.equal(buildPublicResourceFilter({ category: "medicine-assistance" }).category, "medicine-assistance");
-  assert.equal(buildPublicResourceFilter({ category: "unknown" }).category, undefined);
+  const matched = conditionsOf(buildPublicResourceFilter({ category: "medicine-assistance" }));
+  assert.deepEqual(matched.at(-1), { category: "medicine-assistance" });
+
+  const ignored = conditionsOf(buildPublicResourceFilter({ category: "unknown" }));
+  assert.equal(ignored.length, 2);
 });
 
-test("results are split into local matches and programmes to check", () => {
-  const local = listing({ id: "local", city: "Mumbai", state: "Maharashtra" });
-  const programme = listing({ id: "programme", coverage: "India", coverageType: "national" });
-  const partition = partitionResourcesByLocation([programme, local], "Mumbai");
-
-  assert.deepEqual(partition.local.map((resource) => resource.id), ["local"]);
-  assert.deepEqual(partition.alsoAvailable.map((resource) => resource.id), ["programme"]);
-});
-
-test("an exact PIN search only treats the matching PIN as local", () => {
-  const partition = partitionResourcesByLocation(
-    [
-      listing({ id: "match", pinCode: "400012" }),
-      listing({ id: "other", pinCode: "410210", city: "Navi Mumbai", state: "Maharashtra" }),
-    ],
-    "400012",
+test("search, region, and category filters combine", () => {
+  const and = conditionsOf(
+    buildPublicResourceFilter({ search: "Mumbai", region: "western-suburbs", category: "hospitals" }),
   );
-
-  assert.deepEqual(partition.local.map((resource) => resource.id), ["match"]);
-  assert.deepEqual(partition.alsoAvailable.map((resource) => resource.id), ["other"]);
+  assert.equal(and.length, 5);
 });
 
-test("without a location every listing stays in the main results", () => {
-  const partition = partitionResourcesByLocation([listing({ id: "a" }), listing({ id: "b" })], "");
-  assert.equal(partition.local.length, 2);
-  assert.equal(partition.alsoAvailable.length, 0);
+test("each directory category maps to its enquiry action", () => {
+  assert.equal(enquiryTypeForCategory("hospitals"), "appointment");
+  assert.equal(enquiryTypeForCategory("doctors"), "appointment");
+  assert.equal(enquiryTypeForCategory("blood-banks"), "appointment");
+  assert.equal(enquiryTypeForCategory("diagnostics"), "diagnostic");
+  assert.equal(enquiryTypeForCategory("medicine-assistance"), "medicine");
+  assert.equal(enquiryTypeForCategory("financial-aid"), "financial-support");
 });
 
 test("partner application requires at least one contact method", () => {

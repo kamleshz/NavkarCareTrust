@@ -2,17 +2,7 @@
 
 import { getDatabase } from "@/lib/mongodb";
 import { partnerApplicationSchema } from "@/lib/validation";
-
-export interface ApplicationFormState {
-  success: boolean;
-  message: string;
-  errors?: Record<string, string[]>;
-}
-
-export const initialApplicationState: ApplicationFormState = {
-  success: false,
-  message: "",
-};
+import type { ApplicationFormState } from "@/lib/action-state";
 
 export async function submitPartnerApplication(
   _previousState: ApplicationFormState,

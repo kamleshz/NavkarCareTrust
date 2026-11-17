@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import { Nunito } from "next/font/google";
-import { Suspense } from "react";
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
+import { DM_Sans } from "next/font/google";
+import { AppShell } from "@/components/app-shell";
+import { getCurrentUser } from "@/lib/auth/dal";
 import "./globals.css";
 
-const nunito = Nunito({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-nunito",
+  variable: "--font-dm-sans",
   display: "swap",
 });
 
@@ -20,15 +19,13 @@ export const metadata: Metadata = {
     "Find hospitals, doctors, medicine assistance, and financial aid programmes for cancer care in India.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser();
+
   return (
-    <html lang="en" className={nunito.variable}>
+    <html lang="en" className={dmSans.variable}>
       <body suppressHydrationWarning>
-        <Suspense fallback={<div className="header-placeholder" />}>
-          <Header />
-        </Suspense>
-        {children}
-        <Footer />
+        <AppShell user={user}>{children}</AppShell>
       </body>
     </html>
   );

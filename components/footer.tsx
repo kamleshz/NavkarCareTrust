@@ -7,7 +7,8 @@ export function Footer() {
         <p><strong>NavkarCareTrust</strong> · Helping families find cancer care and support in India.</p>
         <div className="footer-links">
           <Link href="/support">Support directory</Link>
-          <Link href="/join">Partner with us</Link>
+          <Link href="/register">For patients</Link>
+          <Link href="/register/organisation">For organisations</Link>
         </div>
       </div>
     </footer>

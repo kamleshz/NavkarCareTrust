@@ -2,7 +2,8 @@ export function getEmptyDirectoryState(hasActiveFilters: boolean) {
   if (hasActiveFilters) {
     return {
       title: "No listings match your search",
-      description: "Try another location or clear your filters to browse all support.",
+      description:
+        "Try another search, region, or category, or clear your filters to browse all support.",
       showClearFilters: true,
     };
   }

@@ -9,13 +9,11 @@ async function main() {
   try {
   const { getDatabase } = await import("../lib/mongodb");
   const { getPublishedResources } = await import("../lib/resources");
-  const { submitPartnerApplication, initialApplicationState } = await import(
-    "../app/actions/partner-application"
+  const { submitPartnerApplication } = await import("../app/actions/partner-application");
+  const { submitPatientSupportRequest } = await import("../app/actions/patient-support");
+  const { initialApplicationState, initialPatientSupportState } = await import(
+    "../lib/action-state"
   );
-  const {
-    submitPatientSupportRequest,
-    initialPatientSupportState,
-  } = await import("../app/actions/patient-support");
 
   const database = await getDatabase();
   await database.collection("resources").insertMany([
@@ -60,12 +58,12 @@ async function main() {
     },
   ]);
 
-  const cityResult = await getPublishedResources({ location: "ahmedabad" });
+  const cityResult = await getPublishedResources({ search: "ahmedabad" });
   assert.equal(cityResult.ok, true);
   assert.equal(cityResult.ok && cityResult.resources.length, 1);
   assert.equal(cityResult.ok && cityResult.resources[0].name, "Ahmedabad Published Centre");
 
-  const pinResult = await getPublishedResources({ location: "380009", category: "hospitals" });
+  const pinResult = await getPublishedResources({ search: "380009", category: "hospitals" });
   assert.equal(pinResult.ok, true);
   assert.equal(pinResult.ok && pinResult.resources.length, 1);
 

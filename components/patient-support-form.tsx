@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import {
-  initialPatientSupportState,
-  submitPatientSupportRequest,
-} from "@/app/actions/patient-support";
+import { submitPatientSupportRequest } from "@/app/actions/patient-support";
+import { initialPatientSupportState } from "@/lib/action-state";
 
 function FieldError({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;

@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import { DirectoryPage, type DirectorySearchParams } from "@/components/directory-page";
+import { DirectoryPage } from "@/components/directory-page";
+import { allSupportHeading, type DirectorySearchParams } from "@/lib/navigation";
 
 export const metadata: Metadata = {
-  title: "Support directory",
-  description: "Browse reviewed cancer care, medicine assistance, and financial aid resources.",
+  title: allSupportHeading.title,
+  description: allSupportHeading.description,
 };
 
-export default function SupportPage({ searchParams }: { searchParams: Promise<DirectorySearchParams> }) {
+export default function SupportPage({
+  searchParams,
+}: {
+  searchParams: Promise<DirectorySearchParams>;
+}) {
   return <DirectoryPage searchParams={searchParams} />;
 }
